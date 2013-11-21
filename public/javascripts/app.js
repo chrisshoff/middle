@@ -57,7 +57,10 @@ $(function() {
 
 	$("#meet_btn").click(function(e) {
 		$.post("/maps", selectedLatLongs, function(result) {
-			console.log(result);
+			$("#locations_list ul li").remove();
+			for (var i in result.results) {
+				$("#locations_list ul").append("<li class='list-group-item'>" + result.results[i].name + "</li>");
+			}
 		});
 	});
 

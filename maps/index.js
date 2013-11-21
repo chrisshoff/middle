@@ -19,7 +19,10 @@ exports.meet = function(req, res) {
             }
         }
 
-        res.json(get_midpoint(total_time, legs));
+        var mid_coords = get_midpoint(total_time, legs);
+        maps_api.places_nearby(mid_coords, function(result) {
+            res.json(result);
+        });
     });
 }
 
