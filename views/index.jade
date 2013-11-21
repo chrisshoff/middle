@@ -1,0 +1,14 @@
+div(class='container')
+    h1 Meet Me in the Middle
+    div(class='row')
+        div(class='column col-md-5', id='location_1')
+            div(class='form-group')
+                input(type=text, placeholder='Enter a location', id='location_input_1', class='location_input form-control')
+            ul(id='results_1', class='results list-group')
+        div(class='column col-md-5', id='location_2')
+            div(class='form-group')
+                input(type=text, placeholder='Enter a location', id='location_input_2', class='location_input form-control')
+            ul(id='results_2', class='results list-group')
+        div(class='col-md-2')
+            div(class='form-group')
+                a(href='#', class='btn btn-primary', id='meet_btn') Let's meet!
