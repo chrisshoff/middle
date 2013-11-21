@@ -4,7 +4,7 @@ var geocode_url = "http://maps.googleapis.com/maps/api/geocode/json";
 var directions_url = "http://maps.googleapis.com/maps/api/directions/json";
 var places_url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
 
-var api_key = "add this later";
+var api_key = "AIzaSyDyf1KaN1qhdF7NLNix51LoLxAWoNtQgp4";
 
 exports.geocode = function(address, callback) {
 	rest.get(geocode_url + "?address=" + address + "&sensor=false").once('complete', function(result) {
