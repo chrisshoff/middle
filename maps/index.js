@@ -1,14 +1,16 @@
 var maps_api = require('./maps_api');
 
 exports.lookupAddress = function(req, res) {
-	maps_api.geocode(req.query.address, function(result) {
+	maps_api.geocode(req.query, function(result) {
 		res.json(result);
 	});
 }
 
 exports.meet = function(req, res) {
-    var origin = req.body.location_1.lat + "," + req.body.location_1.lng;
-    var destination = req.body.location_2.lat + "," + req.body.location_2.lng;
+    console.log(req.body);
+    var origin = req.body.latlng.location_1.lat + "," + req.body.latlng.location_1.lng;
+    var destination = req.body.latlng.location_2.lat + "," + req.body.latlng.location_2.lng;
+    var type = req.body.type;
     maps_api.directions(origin, destination, function(result) {
         // calculate total time
         var total_time = 0;
@@ -20,7 +22,7 @@ exports.meet = function(req, res) {
         }
 
         var mid_coords = get_midpoint(total_time, legs);
-        maps_api.places_nearby(mid_coords, function(result) {
+        maps_api.places_nearby(mid_coords, type, function(result) {
             res.json(result);
         });
     });

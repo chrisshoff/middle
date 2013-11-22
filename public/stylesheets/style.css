@@ -14,3 +14,15 @@ a {
 .highlighted {
     color:#27AE60;
 }
+
+.input-group .input-group-btn .btn {
+    font-size:16px;
+}
+
+#location_1 .has-success .fui-check-inverted {
+    right:45px;
+}
+
+.type_selector {
+    margin-top:10px;
+}

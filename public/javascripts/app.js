@@ -56,20 +56,37 @@ $(function() {
 	});
 
 	$("#meet_btn").click(function(e) {
-		$.post("/maps", selectedLatLongs, function(result) {
+		$.post("/maps", { latlng : selectedLatLongs, type : $("input[name='type_of_place']:checked").val() }, function(result) {
 			$("#locations_list ul li").remove();
+			console.log(result);
 			for (var i in result.results) {
-				$("#locations_list ul").append("<li class='list-group-item'>" + result.results[i].name + "</li>");
+				$("#locations_list ul").append("<li class='list-group-item'><b>" + result.results[i].name + "</b> " + result.results[i].vicinity + "</li>");
 			}
 		});
+	});
+
+	$("#my_location").click(function(e) {
+  		if (navigator.geolocation) {
+    		navigator.geolocation.getCurrentPosition(function(position) {
+    			var results_div = $("#results_1");
+    			var identifier = "location_1";
+    			$.get("/maps", { latlng : position.coords.latitude+","+position.coords.longitude }, function(result) {
+						$("#location_input_1").val(result.results[0].formatted_address);
+						selectedLatLongs[identifier] = result.results[0].geometry.location;
+						$("#location_input_1").parents('.form-group').addClass('has-success')
+						$("#location_input_1").after($('<span class="input-icon fui-check-inverted"></span>'));
+						results_div.find('li').remove();
+				});
+			});
+		}
 	});
 
 	function selectLocation(input_element, results_div) {
 		var identifier = $(input_element).parents('.column').attr('id');
 		input_element.val(results_div.find('.highlighted').text());
 		selectedLatLongs[identifier] = latLongs[identifier][results_div.find('.highlighted').attr('id')];
-		input_element.parents('.form-group').addClass('has-success').append('<span class="input-icon fui-check-inverted"></span>');
+		input_element.parents('.form-group').addClass('has-success')
+		input_element.after($('<span class="input-icon fui-check-inverted"></span>'));
 		results_div.find('li').remove();
-		console.log(selectedLatLongs);	
 	}
 });
