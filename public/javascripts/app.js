@@ -5,6 +5,12 @@ $(function() {
 		location_2 : []
 	};
 	var selectedLatLongs = {};
+
+	var mapOptions = {
+		center: new google.maps.LatLng(-34.397, 150.644),
+		zoom: 12
+	};
+	var map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
 	
 	$(".location_input").keyup(function(e) {
 		var input_element = $(this);
@@ -60,7 +66,7 @@ $(function() {
 			$("#locations_list ul li").remove();
 			console.log(result);
 			for (var i in result.results) {
-				$("#locations_list ul").append("<li class='list-group-item'><b>" + result.results[i].name + "</b> " + result.results[i].vicinity + "</li>");
+				$("#locations_list ul").append("<li class='list-group-item'><div class='distances'>Your Drive: " + result.results[i].distance_matrix.your_distance + " &nbsp;&nbsp; Their Drive: " + result.results[i].distance_matrix.their_distance + "</div><b>" + result.results[i].name + "</b> " + result.results[i].vicinity + "</li>");
 			}
 		});
 	});
@@ -76,6 +82,8 @@ $(function() {
 						$("#location_input_1").parents('.form-group').addClass('has-success')
 						$("#location_input_1").after($('<span class="input-icon fui-check-inverted"></span>'));
 						results_div.find('li').remove();
+
+						map.panTo(new google.maps.LatLng(selectedLatLongs[identifier].lat, selectedLatLongs[identifier].lng));
 				});
 			});
 		}
@@ -88,5 +96,7 @@ $(function() {
 		input_element.parents('.form-group').addClass('has-success')
 		input_element.after($('<span class="input-icon fui-check-inverted"></span>'));
 		results_div.find('li').remove();
+
+    	map.panTo(new google.maps.LatLng(selectedLatLongs[identifier].lat, selectedLatLongs[identifier].lng));
 	}
 });

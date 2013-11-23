@@ -7,7 +7,6 @@ exports.lookupAddress = function(req, res) {
 }
 
 exports.meet = function(req, res) {
-    console.log(req.body);
     var origin = req.body.latlng.location_1.lat + "," + req.body.latlng.location_1.lng;
     var destination = req.body.latlng.location_2.lat + "," + req.body.latlng.location_2.lng;
     var type = req.body.type;
@@ -22,8 +21,25 @@ exports.meet = function(req, res) {
         }
 
         var mid_coords = get_midpoint(total_time, legs);
-        maps_api.places_nearby(mid_coords, type, function(result) {
-            res.json(result);
+        maps_api.places_nearby(mid_coords, type, function(places_list) {
+            var origins = [
+                req.body.latlng.location_1,
+                req.body.latlng.location_2
+            ];
+            var destinations = [];
+            for (var i in places_list.results) {
+                destinations.push(places_list.results[i].geometry.location);
+            }
+
+            maps_api.distance_matrix(origins, destinations, function(matrix_result) {
+                for (var i in places_list.results) {
+                    places_list.results[i]["distance_matrix"] = {
+                        your_distance : matrix_result.rows[0].elements[i].duration.text,
+                        their_distance : matrix_result.rows[1].elements[i].duration.text
+                    }
+                }
+                res.json(places_list);
+            });
         });
     });
 }
