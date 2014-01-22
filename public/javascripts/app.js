@@ -11,11 +11,18 @@ $(function() {
 		zoom: 12
 	};
 	var map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
+
+	$("button").click(function(e) {
+		e.preventDefault();
+	});
 	
 	$(".location_input").keyup(function(e) {
 		var input_element = $(this);
 		var results_div = $(input_element).parents('.column').find('.results');
 		var identifier = $(input_element).parents('.column').attr('id');
+
+		unselectLocation(input_element);
+
 		switch (e.which) {
 		case 38:
 			e.preventDefault();
@@ -72,11 +79,16 @@ $(function() {
 	});
 
 	$("#my_location").click(function(e) {
+		var original_element = $(this);
+		original_element.find("span").hide();
+		original_element.find(".loading").show();
   		if (navigator.geolocation) {
     		navigator.geolocation.getCurrentPosition(function(position) {
     			var results_div = $("#results_1");
     			var identifier = "location_1";
     			$.get("/maps", { latlng : position.coords.latitude+","+position.coords.longitude }, function(result) {
+    					original_element.find("span").show();
+    					original_element.find(".loading").hide();
 						$("#location_input_1").val(result.results[0].formatted_address);
 						selectedLatLongs[identifier] = result.results[0].geometry.location;
 						$("#location_input_1").parents('.form-group').addClass('has-success')
@@ -98,5 +110,10 @@ $(function() {
 		results_div.find('li').remove();
 
     	map.panTo(new google.maps.LatLng(selectedLatLongs[identifier].lat, selectedLatLongs[identifier].lng));
+	}
+
+	function unselectLocation(input_element) {
+		input_element.parents(".form-group").removeClass("has-success");
+		input_element.parents(".form-group").find(".fui-check-inverted").remove();
 	}
 });
