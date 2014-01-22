@@ -68,52 +68,94 @@ $(function() {
 		selectLocation(input_element, results_div);
 	});
 
-	$("#meet_btn").click(function(e) {
-		$.post("/maps", { latlng : selectedLatLongs, type : $("input[name='type_of_place']:checked").val() }, function(result) {
-			$("#locations_list ul li").remove();
-			console.log(result);
-			for (var i in result.results) {
-				$("#locations_list ul").append("<li class='list-group-item'><div class='distances'>Your Drive: " + result.results[i].distance_matrix.your_distance + " &nbsp;&nbsp; Their Drive: " + result.results[i].distance_matrix.their_distance + "</div><b>" + result.results[i].name + "</b> " + result.results[i].vicinity + "</li>");
-			}
-		});
-	});
-
-	$("#my_location").click(function(e) {
+	$(".my_location").click(function(e) {
 		var original_element = $(this);
 		original_element.find("span").hide();
 		original_element.find(".loading").show();
   		if (navigator.geolocation) {
     		navigator.geolocation.getCurrentPosition(function(position) {
-    			var results_div = $("#results_1");
-    			var identifier = "location_1";
+    			var input_element = $(original_element).parents(".column").find(".location_input");
+    			var results_div = $(original_element).parents('.column').find('.results');
+    			var identifier = $(original_element).parents('.column').attr('id');
     			$.get("/maps", { latlng : position.coords.latitude+","+position.coords.longitude }, function(result) {
     					original_element.find("span").show();
     					original_element.find(".loading").hide();
-						$("#location_input_1").val(result.results[0].formatted_address);
+						input_element.val(result.results[0].formatted_address);
 						selectedLatLongs[identifier] = result.results[0].geometry.location;
-						$("#location_input_1").parents('.form-group').addClass('has-success')
-						$("#location_input_1").after($('<span class="input-icon fui-check-inverted"></span>'));
+						input_element.parents('.form-group').addClass('has-success')
+						original_element.addClass("btn-success");
+						var icon = original_element.find("span");
+						icon.attr("class", "");
+						icon.attr("class", "fui-check-inverted");
 						results_div.find('li').remove();
 
 						map.panTo(new google.maps.LatLng(selectedLatLongs[identifier].lat, selectedLatLongs[identifier].lng));
+						var marker = new google.maps.Marker({
+  							position: new google.maps.LatLng(selectedLatLongs[identifier].lat, selectedLatLongs[identifier].lng), 
+  							icon: '/images/' + identifier + '_icon.png',
+  							map: map,
+						});
+
+						if (selectedLatLongs.location_1 && selectedLatLongs.location_2) {
+							populateResults();
+						}
 				});
 			});
 		}
 	});
+
+	function populateResults() {
+		//$.post("/maps", { latlng : selectedLatLongs, type : $("input[name='type_of_place']:checked").val() }, function(result) {
+		$.post("/maps", { latlng : selectedLatLongs, type : "bar" }, function(result) {
+			$("#locations_list ul li").remove();
+			for (var i in result.results) {
+				//$("#locations_list ul").append("<li class='list-group-item'><div class='distances'>Your Drive: " + result.results[i].distance_matrix.your_distance + " &nbsp;&nbsp; Their Drive: " + result.results[i].distance_matrix.their_distance + "</div><b>" + result.results[i].name + "</b> " + result.results[i].vicinity + "</li>");
+				$("#locations_list ul").append("<li class='list-group-item'>" + result.results[i].name + "</li>");
+				var marker = new google.maps.Marker({
+					position: new google.maps.LatLng(result.results[i].geometry.location.lat, result.results[i].geometry.location.lng), 
+					map: map
+				});
+			}
+
+			if (result.results.length > 0) {
+				$("#locations_list").show();
+			} else {
+				$("#locations_list").hide();
+			}
+		});
+	}
 
 	function selectLocation(input_element, results_div) {
 		var identifier = $(input_element).parents('.column').attr('id');
 		input_element.val(results_div.find('.highlighted').text());
 		selectedLatLongs[identifier] = latLongs[identifier][results_div.find('.highlighted').attr('id')];
 		input_element.parents('.form-group').addClass('has-success')
-		input_element.after($('<span class="input-icon fui-check-inverted"></span>'));
 		results_div.find('li').remove();
 
+		var btn_el = input_element.parents(".input-group").find(".btn");
+		btn_el.addClass("btn-success");
+		var icon = btn_el.find("span");
+		icon.attr("class", "");
+		icon.attr("class", "fui-check-inverted");
+
     	map.panTo(new google.maps.LatLng(selectedLatLongs[identifier].lat, selectedLatLongs[identifier].lng));
+    	var marker = new google.maps.Marker({
+			position: new google.maps.LatLng(selectedLatLongs[identifier].lat, selectedLatLongs[identifier].lng), 
+			map: map,
+			icon: '/images/' + identifier + '_icon.png',
+		});
+
+		if (selectedLatLongs.location_1 && selectedLatLongs.location_2) {
+			populateResults();
+		}
 	}
 
 	function unselectLocation(input_element) {
 		input_element.parents(".form-group").removeClass("has-success");
-		input_element.parents(".form-group").find(".fui-check-inverted").remove();
+		var btn_el = input_element.parents(".input-group").find(".btn");
+		btn_el.removeClass("btn-success");
+		var icon = btn_el.find("span");
+		icon.attr("class", "");
+		icon.attr("class", "fui-radio-checked");
 	}
 });

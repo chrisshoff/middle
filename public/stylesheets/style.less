@@ -1,0 +1,102 @@
+@success-green: #547b48;
+@lucida-font-family: "Lucida Grande", Helvetica, Arial, sans-serif;
+
+html {
+  width:100%;
+  height:100%;
+}
+
+body {
+  padding: 50px;
+  font: 14px @lucida-font-family;
+  width:100%;
+  height:100%;
+}
+
+a {
+  color: #00B7FF;
+}
+
+.results {
+  cursor:pointer;
+}
+
+.highlighted {
+  color:@success-green;
+  font-weight:bold;
+}
+
+.input-group {
+  .input-group-btn {
+    .btn {
+      font-size:16px;
+    }
+
+    .btn-success {
+      background-color:@success-green;
+    }
+  }
+}
+
+.form-control:focus {
+  border-color:#d9cfab;
+}
+
+.has-success {
+  .form-control {
+    color: @success-green;
+    border-color: @success-green;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+  }
+
+  .input-icon {
+    color: @success-green;
+  }
+
+  .form-control:focus {
+    border-color: @success-green;
+  }
+}
+
+.my_location {
+  outline:none;
+  height:42px;
+  width:48px;
+
+  .loading {
+    display:none;
+  }
+}
+
+.type_selector {
+  margin-top:10px;
+}
+
+.distances {
+  float:right;
+  color:#cccccc;
+  font-size:11px;
+}
+
+#map-canvas {
+  position:absolute;
+  top:0px;
+  left:0px;
+  height:100%;
+  width:100%;
+}
+
+h4.title {
+  margin:0px;
+  margin-top:7px;
+  color:#FFFFFF;
+  text-shadow: 2px 2px #777777;
+}
+
+#locations_list {
+  display:none;
+  margin-top:35px;
+  overflow-y:scroll;
+  height:400px;
+}
