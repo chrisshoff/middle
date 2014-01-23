@@ -5,6 +5,7 @@ $(function() {
 		location_2 : []
 	};
 	var selectedLatLongs = {};
+	var markers = [];
 
 	var mapOptions = {
 		center: new google.maps.LatLng(-34.397, 150.644),
@@ -69,7 +70,10 @@ $(function() {
 	});
 
 	$(".my_location").click(function(e) {
-		var original_element = $(this);
+		getMyLocation($(this));
+	});
+
+	function getMyLocation(original_element) {
 		original_element.find("span").hide();
 		original_element.find(".loading").show();
   		if (navigator.geolocation) {
@@ -102,27 +106,43 @@ $(function() {
 				});
 			});
 		}
-	});
+	}
 
 	function populateResults() {
 		//$.post("/maps", { latlng : selectedLatLongs, type : $("input[name='type_of_place']:checked").val() }, function(result) {
 		$.post("/maps", { latlng : selectedLatLongs, type : "bar" }, function(result) {
 			$("#locations_list ul li").remove();
+			markers = [];
 			for (var i in result.results) {
 				//$("#locations_list ul").append("<li class='list-group-item'><div class='distances'>Your Drive: " + result.results[i].distance_matrix.your_distance + " &nbsp;&nbsp; Their Drive: " + result.results[i].distance_matrix.their_distance + "</div><b>" + result.results[i].name + "</b> " + result.results[i].vicinity + "</li>");
 				$("#locations_list ul").append("<li class='list-group-item'>" + result.results[i].name + "</li>");
-				var marker = new google.maps.Marker({
-					position: new google.maps.LatLng(result.results[i].geometry.location.lat, result.results[i].geometry.location.lng), 
-					map: map
-				});
+
+				var marker = createMarker(new google.maps.LatLng(result.results[i].geometry.location.lat, result.results[i].geometry.location.lng),
+					result.results[i].name, result.results[i].name + "<br />" + result.results[i].vicinity + "<br />" + result.results[i].distance_matrix.your_distance + "<br />" + result.results[i].distance_matrix.their_distance);
+				
+				markers.push(marker);
 			}
 
-			if (result.results.length > 0) {
+			/*if (result.results.length > 0) {
 				$("#locations_list").show();
 			} else {
 				$("#locations_list").hide();
-			}
+			}*/
 		});
+	}
+
+	function createMarker(pos, title, contents) {
+	    var marker = new google.maps.Marker({       
+	        position: pos, 
+	        map: map,
+	        title: title      
+	    }); 
+	    google.maps.event.addListener(marker, 'click', function() { 
+	       new google.maps.InfoWindow({
+      			content: contents
+  			}).open(map, this);
+	    }); 
+	    return marker;  
 	}
 
 	function selectLocation(input_element, results_div) {
@@ -158,4 +178,6 @@ $(function() {
 		icon.attr("class", "");
 		icon.attr("class", "fui-radio-checked");
 	}
+
+	getMyLocation($("#location_1 .my_location"));
 });
