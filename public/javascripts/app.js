@@ -1,115 +1,121 @@
-$(function() {
+function ClientApp() {
 	var currentTimeout = null;
+	
+	// Stores all potential coordinates, based on what the user searched for
 	var latLongs = {
 		location_1 : [],
 		location_2 : []
 	};
-	var selectedLatLongs = {};
-	var markers = [];
 
+	var selectedLatLongs = {}; // Keep track of what the user selected for our/their locations
+	var markers = []; // Stores all place result markers on the map
+
+	// Starting position of the map
 	var mapOptions = {
 		center: new google.maps.LatLng(-34.397, 150.644),
 		zoom: 12
 	};
 	var map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
 
-	$("button").click(function(e) {
-		e.preventDefault();
-	});
-	
-	$(".location_input").keyup(function(e) {
-		var input_element = $(this);
-		var results_div = $(input_element).parents('.column').find('.results');
-		var identifier = $(input_element).parents('.column').attr('id');
+	initEvents();
+	getMyLocation($("#location_1 .my_location"));
 
-		unselectLocation(input_element);
+	function initEvents() {
 
-		switch (e.which) {
-		case 38:
+		// Prevent default on all button clicks
+		$("button").click(function(e) {
 			e.preventDefault();
-			results_div.find('.highlighted').each(function (e) {
-				$(this).removeClass('highlighted').prev().addClass('highlighted');
-			});
-			break;
-		case 40:
-			e.preventDefault();
-			results_div.find('.highlighted').each(function (e) {
-				$(this).removeClass('highlighted').next().addClass('highlighted');
-			});
-			break;
-		case 27:
-			// e.stopPropagation();
-			// $(results_selector).hide();
-			break;
-		case 13:
-			selectLocation(input_element, results_div);
-			break;
-		default:
-			window.clearTimeout(currentTimeout);
-			currentTimeout = setTimeout(function() {
-				$.get("/maps", { address : input_element.val() }, function(result) {
-					results_div.html("");
-					latLongs[identifier] = [];
-					for (var i in result.results) {
-						results_div.append("<li id='" + i + "' class='list-group-item'>" + result.results[i].formatted_address + "</li>");
-						latLongs[identifier][i] = result.results[i].geometry.location;
-					}
+		});
+		
+		// Auto-query Google Maps API as user types
+		$(".location_input").keyup(function(e) {
+			var el_map = getElementsMapFor(this);
 
-					results_div.find("li:first").addClass('highlighted');
-				})
-			}, 200);
-		}
-	});
+			unselectLocation(el_map);
 
-	$(".results").on("click", "li", function(e) {
-		var input_element = $(this).parents('.column').find('.location_input');
-		var results_div = $(input_element).parents('.column').find('.results');
-		results_div.find('.highlighted').removeClass('highlighted');
-		$(this).addClass('highlighted');
-		selectLocation(input_element, results_div);
-	});
+			switch (e.which) {
+			case 38:
+				// Up key - go up in results
+				e.preventDefault();
+				el_map["results_div"].find('.highlighted').each(function (e) {
+					$(this).removeClass('highlighted').prev().addClass('highlighted');
+				});
+				break;
+			case 40:
+				// Down key - go down in results
+				e.preventDefault();
+				el_map["results_div"].find('.highlighted').each(function (e) {
+					$(this).removeClass('highlighted').next().addClass('highlighted');
+				});
+				break;
+			case 27:
+				// e.stopPropagation();
+				// $(results_selector).hide();
+				break;
+			case 13:
+				// Enter key - select the currently highlighted result
+				selectLocation(
+					el_map, 
+					el_map["results_div"].find('.highlighted').text(), 
+					latLongs[el_map["identifier"]][el_map["results_div"].find('.highlighted').attr('id')]
+				);
+				break;
+			default:
+				// The user is still typing - clear the current timeout and make another request after 200 ms
+				window.clearTimeout(currentTimeout);
+				currentTimeout = setTimeout(function() {
+					$.get("/maps", { address : el_map["input_element"].val() }, function(result) {
+						el_map["results_div"].html("");
+						latLongs[el_map["identifier"]] = [];
+						for (var i in result.results) {
+							el_map["results_div"].append("<li id='" + i + "' class='list-group-item'>" + result.results[i].formatted_address + "</li>");
+							latLongs[el_map["identifier"]][i] = result.results[i].geometry.location;
+						}
 
-	$(".my_location").click(function(e) {
-		getMyLocation($(this));
-	});
+						el_map["results_div"].find("li:first").addClass('highlighted');
+					})
+				}, 200);
+			}
+		});
+
+		// User clicks on a potential result to select it
+		$(".results").on("click", "li", function(e) {
+			var el_map = getElementsMapFor(this);
+			el_map["results_div"].find('.highlighted').removeClass('highlighted');
+			$(this).addClass('highlighted');
+			selectLocation(
+				el_map,
+				el_map["results_div"].find('.highlighted').text(), 
+				latLongs[el_map["identifier"]][el_map["results_div"].find('.highlighted').attr('id')]
+			);
+		});
+
+		// Get the user's location when either of the My Location buttons is clicked
+		$(".my_location").click(function(e) {
+			getMyLocation($(this));
+		});
+	}
 
 	function getMyLocation(original_element) {
 		original_element.find("span").hide();
 		original_element.find(".loading").show();
   		if (navigator.geolocation) {
     		navigator.geolocation.getCurrentPosition(function(position) {
-    			var input_element = $(original_element).parents(".column").find(".location_input");
-    			var results_div = $(original_element).parents('.column').find('.results');
-    			var identifier = $(original_element).parents('.column').attr('id');
+    			var el_map = getElementsMapFor(original_element);
     			$.get("/maps", { latlng : position.coords.latitude+","+position.coords.longitude }, function(result) {
     					original_element.find("span").show();
     					original_element.find(".loading").hide();
-						input_element.val(result.results[0].formatted_address);
-						selectedLatLongs[identifier] = result.results[0].geometry.location;
-						input_element.parents('.form-group').addClass('has-success')
-						original_element.addClass("btn-success");
-						var icon = original_element.find("span");
-						icon.attr("class", "");
-						icon.attr("class", "fui-check-inverted");
-						results_div.find('li').remove();
-
-						map.panTo(new google.maps.LatLng(selectedLatLongs[identifier].lat, selectedLatLongs[identifier].lng));
-						var marker = new google.maps.Marker({
-  							position: new google.maps.LatLng(selectedLatLongs[identifier].lat, selectedLatLongs[identifier].lng), 
-  							icon: '/images/' + identifier + '_icon.png',
-  							map: map,
-						});
-
-						if (selectedLatLongs.location_1 && selectedLatLongs.location_2) {
-							populateResults();
-						}
+    					selectLocation(
+    						el_map,
+    						result.results[0].formatted_address, 
+    						result.results[0].geometry.location
+    					);
 				});
 			});
 		}
 	}
 
 	function populateResults() {
-		//$.post("/maps", { latlng : selectedLatLongs, type : $("input[name='type_of_place']:checked").val() }, function(result) {
 		$.post("/maps", { latlng : selectedLatLongs, type : "bar" }, function(result) {
 			$("#locations_list ul li").remove();
 			markers = [];
@@ -145,24 +151,19 @@ $(function() {
 	    return marker;  
 	}
 
-	function selectLocation(input_element, results_div) {
-		var identifier = $(input_element).parents('.column').attr('id');
-		input_element.val(results_div.find('.highlighted').text());
-		selectedLatLongs[identifier] = latLongs[identifier][results_div.find('.highlighted').attr('id')];
-		input_element.parents('.form-group').addClass('has-success')
-		results_div.find('li').remove();
+	function selectLocation(el_map, selected_text, selected_coords) {
+		el_map["input_element"].val(selected_text);
+		changeInputState(el_map, true);
+		changeButtonState(el_map, true);
 
-		var btn_el = input_element.parents(".input-group").find(".btn");
-		btn_el.addClass("btn-success");
-		var icon = btn_el.find("span");
-		icon.attr("class", "");
-		icon.attr("class", "fui-check-inverted");
+		el_map["results_div"].find('li').remove();
 
-    	map.panTo(new google.maps.LatLng(selectedLatLongs[identifier].lat, selectedLatLongs[identifier].lng));
-    	var marker = new google.maps.Marker({
-			position: new google.maps.LatLng(selectedLatLongs[identifier].lat, selectedLatLongs[identifier].lng), 
-			map: map,
-			icon: '/images/' + identifier + '_icon.png',
+		selectedLatLongs[el_map["identifier"]] = selected_coords;
+		map.panTo(new google.maps.LatLng(selected_coords.lat, selected_coords.lng));
+		var marker = new google.maps.Marker({
+				position: new google.maps.LatLng(selected_coords.lat, selected_coords.lng), 
+				icon: '/images/' + el_map["identifier"] + '_icon.png',
+				map: map,
 		});
 
 		if (selectedLatLongs.location_1 && selectedLatLongs.location_2) {
@@ -170,14 +171,42 @@ $(function() {
 		}
 	}
 
-	function unselectLocation(input_element) {
-		input_element.parents(".form-group").removeClass("has-success");
-		var btn_el = input_element.parents(".input-group").find(".btn");
-		btn_el.removeClass("btn-success");
-		var icon = btn_el.find("span");
-		icon.attr("class", "");
-		icon.attr("class", "fui-radio-checked");
+	function unselectLocation(el_map) {
+		el_map["input_element"].parents(".form-group").removeClass("has-success");
+		changeButtonState(el_map, false);
 	}
 
-	getMyLocation($("#location_1 .my_location"));
+	function changeButtonState(el_map, success) {
+		var btn_el = el_map["input_element"].parents(".input-group").find(".btn");
+		var icon = btn_el.find("span");
+		icon.attr("class", "");
+		if (success) {
+			btn_el.addClass("btn-success");
+			icon.attr("class", "fui-check-inverted");
+		} else {
+			btn_el.removeClass("btn-success");
+			icon.attr("class", "fui-radio-checked");
+		}
+	}
+
+	function changeInputState(el_map, success) {
+		if (success) {
+			el_map["input_element"].parents('.form-group').addClass('has-success');
+		} else {
+			el_map["input_element"].parents('.form-group').removeClass('has-success');
+		}
+	}
+
+	function getElementsMapFor(input_element) {
+		var elements_map = {};
+		elements_map["parent_column"] = $(input_element).parents(".column");
+		elements_map["input_element"] = elements_map["parent_column"].find(".location_input");
+		elements_map["results_div"] = elements_map["parent_column"].find('.results');
+		elements_map["identifier"] = elements_map["parent_column"].attr('id');
+		return elements_map;
+	}
+}
+
+$(function() {
+	new ClientApp();
 });
