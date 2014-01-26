@@ -31,22 +31,18 @@ function ClientApp() {
 		$(".location_input").keyup(function(e) {
 			var el_map = getElementsMapFor(this);
 
-			unselectLocation(el_map);
+			resetInput(el_map);
 
 			switch (e.which) {
 			case 38:
 				// Up key - go up in results
 				e.preventDefault();
-				el_map["results_div"].find('.highlighted').each(function (e) {
-					$(this).removeClass('highlighted').prev().addClass('highlighted');
-				});
+				moveSelectedResult(el_map, "prev");
 				break;
 			case 40:
 				// Down key - go down in results
 				e.preventDefault();
-				el_map["results_div"].find('.highlighted').each(function (e) {
-					$(this).removeClass('highlighted').next().addClass('highlighted');
-				});
+				moveSelectedResult(el_map, "next");
 				break;
 			case 27:
 				// e.stopPropagation();
@@ -96,15 +92,17 @@ function ClientApp() {
 		});
 	}
 
-	function getMyLocation(original_element) {
-		original_element.find("span").hide();
-		original_element.find(".loading").show();
+	function getMyLocation(my_location_button) {
+		// Show loading indicator
+		my_location_button.find("span").hide();
+		my_location_button.find(".loading").show();
   		if (navigator.geolocation) {
     		navigator.geolocation.getCurrentPosition(function(position) {
-    			var el_map = getElementsMapFor(original_element);
+    			var el_map = getElementsMapFor(my_location_button);
     			$.get("/maps", { latlng : position.coords.latitude+","+position.coords.longitude }, function(result) {
-    					original_element.find("span").show();
-    					original_element.find(".loading").hide();
+    					// Hide loading indicator
+    					my_location_button.find("span").show();
+    					my_location_button.find(".loading").hide();
     					selectLocation(
     						el_map,
     						result.results[0].formatted_address, 
@@ -116,8 +114,22 @@ function ClientApp() {
 	}
 
 	function populateResults() {
-		$.post("/maps", { latlng : selectedLatLongs, type : "bar" }, function(result) {
+		var submittableData = {
+			location_1 : {
+				lat : selectedLatLongs.location_1.lat,
+				lng : selectedLatLongs.location_1.lng
+			},
+			location_2 : {
+				lat : selectedLatLongs.location_2.lat,
+				lng : selectedLatLongs.location_2.lng
+			}
+		};
+		
+		$.post("/maps", { latlng : submittableData, type : "bar" }, function(result) {
 			$("#locations_list ul li").remove();
+			for (var i in markers) {
+				markers[i].setMap(null);
+			}
 			markers = [];
 			for (var i in result.results) {
 				//$("#locations_list ul").append("<li class='list-group-item'><div class='distances'>Your Drive: " + result.results[i].distance_matrix.your_distance + " &nbsp;&nbsp; Their Drive: " + result.results[i].distance_matrix.their_distance + "</div><b>" + result.results[i].name + "</b> " + result.results[i].vicinity + "</li>");
@@ -152,6 +164,7 @@ function ClientApp() {
 	}
 
 	function selectLocation(el_map, selected_text, selected_coords) {
+		unselectLocation(el_map);
 		el_map["input_element"].val(selected_text);
 		changeInputState(el_map, true);
 		changeButtonState(el_map, true);
@@ -165,15 +178,23 @@ function ClientApp() {
 				icon: '/images/' + el_map["identifier"] + '_icon.png',
 				map: map,
 		});
+		selectedLatLongs[el_map["identifier"]].marker = marker;
 
 		if (selectedLatLongs.location_1 && selectedLatLongs.location_2) {
 			populateResults();
 		}
 	}
 
-	function unselectLocation(el_map) {
+	function resetInput(el_map) {
 		el_map["input_element"].parents(".form-group").removeClass("has-success");
 		changeButtonState(el_map, false);
+	}
+
+	function unselectLocation(el_map) {
+		if (selectedLatLongs[el_map.identifier]) {
+			selectedLatLongs[el_map.identifier].marker.setMap(null);
+			delete selectedLatLongs[el_map.identifier];
+		}
 	}
 
 	function changeButtonState(el_map, success) {
@@ -204,6 +225,13 @@ function ClientApp() {
 		elements_map["results_div"] = elements_map["parent_column"].find('.results');
 		elements_map["identifier"] = elements_map["parent_column"].attr('id');
 		return elements_map;
+	}
+
+	function moveSelectedResult(el_map, fn) {
+		el_map["results_div"].find('.highlighted').each(function (e) {
+			$(this).removeClass('highlighted');
+			$(this)[fn]().addClass('highlighted');
+		});
 	}
 }
 
